@@ -32,7 +32,7 @@ import (
 func lsCommand() *command {
 	cmd := newCommand("ls")
 	cmd.Description = func() string { return "list a container contents" }
-	cmd.Usage = func() string { return "Usage: ls [-flags] <container_name>" }
+	cmd.Usage = func() string { return "Usage: ls [-flags] <container_name> or <container_id> <storage_id>" }
 	longFlag := cmd.Bool("l", false, "long listing")
 	fullFlag := cmd.Bool("f", false, "shows full path")
 
@@ -45,15 +45,31 @@ func lsCommand() *command {
 			return errors.New("Invalid arguments: " + cmd.Usage())
 		}
 
-		fn := cmd.Args()[0]
 		client, err := getClient()
 		if err != nil {
 			return err
 		}
 
-		ref := &provider.Reference{
-			Spec: &provider.Reference_Path{Path: fn},
+		var ref = &provider.Reference{}
+		if cmd.NArg() == 1 {
+			fn := cmd.Args()[0]
+
+			ref = &provider.Reference{
+				Spec: &provider.Reference_Path{Path: fn},
+			}
+		} else {
+			fileId := cmd.Args()[0]
+			storageId := cmd.Args()[1]
+			ref = &provider.Reference{
+				Spec: &provider.Reference_Id{
+					Id: &provider.ResourceId{
+						StorageId: storageId,
+						OpaqueId:  fileId,
+					},
+				},
+			}
 		}
+
 		req := &provider.ListContainerRequest{Ref: ref}
 
 		ctx := getAuthContext()

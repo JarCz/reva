@@ -30,13 +30,11 @@ import (
 func statCommand() *command {
 	cmd := newCommand("stat")
 	cmd.Description = func() string { return "get the metadata for a file or folder" }
-	cmd.Usage = func() string { return "Usage: stat [-flags] <file_name>" }
+	cmd.Usage = func() string { return "Usage: stat [-flags] <file_name> or <file_id> <storage_id>" }
 	cmd.Action = func(w ...io.Writer) error {
 		if cmd.NArg() < 1 {
 			return errors.New("Invalid arguments: " + cmd.Usage())
 		}
-
-		fn := cmd.Args()[0]
 
 		ctx := getAuthContext()
 		client, err := getClient()
@@ -44,9 +42,26 @@ func statCommand() *command {
 			return err
 		}
 
-		ref := &provider.Reference{
-			Spec: &provider.Reference_Path{Path: fn},
+		var ref = &provider.Reference{}
+		if cmd.NArg() == 1 {
+			fn := cmd.Args()[0]
+
+			ref = &provider.Reference{
+				Spec: &provider.Reference_Path{Path: fn},
+			}
+		} else {
+			fileId := cmd.Args()[0]
+			storageId := cmd.Args()[1]
+			ref = &provider.Reference{
+				Spec: &provider.Reference_Id{
+					Id: &provider.ResourceId{
+						StorageId: storageId,
+						OpaqueId:  fileId,
+					},
+				},
+			}
 		}
+
 		req := &provider.StatRequest{Ref: ref}
 		res, err := client.Stat(ctx, req)
 		if err != nil {

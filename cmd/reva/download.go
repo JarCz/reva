@@ -41,23 +41,48 @@ import (
 func downloadCommand() *command {
 	cmd := newCommand("download")
 	cmd.Description = func() string { return "download a remote file to the local filesystem" }
-	cmd.Usage = func() string { return "Usage: download [-flags] <remote_file> <local_file>" }
+	cmd.Usage = func() string {
+		return "Usage: download [-flags] <remote_file> <local_file> or <remote_id> <storage_id> <local_file>"
+	}
 	cmd.Action = func(w ...io.Writer) error {
 		if cmd.NArg() < 2 {
 			return errors.New("Invalid arguments: " + cmd.Usage())
 		}
-
-		remote := cmd.Args()[0]
-		local := cmd.Args()[1]
 
 		client, err := getClient()
 		if err != nil {
 			return err
 		}
 
-		ref := &provider.Reference{
-			Spec: &provider.Reference_Path{Path: remote},
+		var ref = &provider.Reference{}
+		var local string
+		var remote string
+		var fileId string
+		var storageId string
+
+		if cmd.NArg() == 2 {
+			remote = cmd.Args()[0]
+			local = cmd.Args()[1]
+
+			ref = &provider.Reference{
+				Spec: &provider.Reference_Path{Path: remote},
+			}
+
+		} else {
+
+			fileId = cmd.Args()[0]
+			storageId = cmd.Args()[1]
+			local = cmd.Args()[2]
+			ref = &provider.Reference{
+				Spec: &provider.Reference_Id{
+					Id: &provider.ResourceId{
+						StorageId: storageId,
+						OpaqueId:  fileId,
+					},
+				},
+			}
 		}
+
 		req1 := &provider.StatRequest{Ref: ref}
 		ctx := getAuthContext()
 		res1, err := client.Stat(ctx, req1)
@@ -70,13 +95,28 @@ func downloadCommand() *command {
 
 		info := res1.Info
 
-		req2 := &provider.InitiateFileDownloadRequest{
-			Ref: &provider.Reference{
-				Spec: &provider.Reference_Path{
-					Path: remote,
+		var req2 = &provider.InitiateFileDownloadRequest{}
+		if cmd.NArg() == 2 {
+			req2 = &provider.InitiateFileDownloadRequest{
+				Ref: &provider.Reference{
+					Spec: &provider.Reference_Path{
+						Path: remote,
+					},
 				},
-			},
+			}
+		} else {
+			req2 = &provider.InitiateFileDownloadRequest{
+				Ref: &provider.Reference{
+					Spec: &provider.Reference_Id{
+						Id: &provider.ResourceId{
+							StorageId: storageId,
+							OpaqueId:  fileId,
+						},
+					},
+				},
+			}
 		}
+
 		res, err := client.InitiateFileDownload(ctx, req2)
 		if err != nil {
 			return err
