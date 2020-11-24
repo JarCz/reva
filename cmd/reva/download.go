@@ -42,7 +42,7 @@ func downloadCommand() *command {
 	cmd := newCommand("download")
 	cmd.Description = func() string { return "download a remote file to the local filesystem" }
 	cmd.Usage = func() string {
-		return "Usage: download [-flags] <remote_file> <local_file> or <remote_id> <storage_id> <local_file>"
+		return "Usage: download [-flags] <remote_file> <local_file> or <storage_id> <remote_id> <local_file>"
 	}
 	cmd.Action = func(w ...io.Writer) error {
 		if cmd.NArg() < 2 {
@@ -54,14 +54,12 @@ func downloadCommand() *command {
 			return err
 		}
 
-		var ref = &provider.Reference{}
 		var local string
-		var remote string
-		var fileId string
-		var storageId string
+		var ref = &provider.Reference{}
 
 		if cmd.NArg() == 2 {
-			remote = cmd.Args()[0]
+
+			remote := cmd.Args()[0]
 			local = cmd.Args()[1]
 
 			ref = &provider.Reference{
@@ -70,14 +68,15 @@ func downloadCommand() *command {
 
 		} else {
 
-			fileId = cmd.Args()[0]
-			storageId = cmd.Args()[1]
+			storageID := cmd.Args()[0]
+			resourceID := cmd.Args()[1]
 			local = cmd.Args()[2]
+
 			ref = &provider.Reference{
 				Spec: &provider.Reference_Id{
-					Id: &provider.ResourceId{
-						StorageId: storageId,
-						OpaqueId:  fileId,
+					&provider.ResourceId{
+						StorageId: storageID,
+						OpaqueId:  resourceID,
 					},
 				},
 			}
@@ -95,28 +94,13 @@ func downloadCommand() *command {
 
 		info := res1.Info
 
-		var req2 = &provider.InitiateFileDownloadRequest{}
-		if cmd.NArg() == 2 {
-			req2 = &provider.InitiateFileDownloadRequest{
-				Ref: &provider.Reference{
-					Spec: &provider.Reference_Path{
-						Path: remote,
-					},
+		req2 := &provider.InitiateFileDownloadRequest{
+			Ref: &provider.Reference{
+				Spec: &provider.Reference_Path{
+					Path: info.Path,
 				},
-			}
-		} else {
-			req2 = &provider.InitiateFileDownloadRequest{
-				Ref: &provider.Reference{
-					Spec: &provider.Reference_Id{
-						Id: &provider.ResourceId{
-							StorageId: storageId,
-							OpaqueId:  fileId,
-						},
-					},
-				},
-			}
+			},
 		}
-
 		res, err := client.InitiateFileDownload(ctx, req2)
 		if err != nil {
 			return err
