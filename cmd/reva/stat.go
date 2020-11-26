@@ -30,7 +30,7 @@ import (
 func statCommand() *command {
 	cmd := newCommand("stat")
 	cmd.Description = func() string { return "get the metadata for a file or folder" }
-	cmd.Usage = func() string { return "Usage: stat [-flags] <file_name> or <file_id> <storage_id>" }
+	cmd.Usage = func() string { return "Usage: stat [-flags] <file_name> or <storage_id> <file_id>" }
 	cmd.Action = func(w ...io.Writer) error {
 		if cmd.NArg() < 1 {
 			return errors.New("Invalid arguments: " + cmd.Usage())
@@ -50,8 +50,8 @@ func statCommand() *command {
 				Spec: &provider.Reference_Path{Path: fn},
 			}
 		} else {
-			fileId := cmd.Args()[0]
-			storageId := cmd.Args()[1]
+			storageId := cmd.Args()[0]
+			fileId := cmd.Args()[1]
 			ref = &provider.Reference{
 				Spec: &provider.Reference_Id{
 					Id: &provider.ResourceId{

@@ -32,7 +32,7 @@ import (
 func lsCommand() *command {
 	cmd := newCommand("ls")
 	cmd.Description = func() string { return "list a container contents" }
-	cmd.Usage = func() string { return "Usage: ls [-flags] <container_name> or <container_id> <storage_id>" }
+	cmd.Usage = func() string { return "Usage: ls [-flags] <container_name> or <storage_id> <container_id>" }
 	longFlag := cmd.Bool("l", false, "long listing")
 	fullFlag := cmd.Bool("f", false, "shows full path")
 
@@ -58,8 +58,8 @@ func lsCommand() *command {
 				Spec: &provider.Reference_Path{Path: fn},
 			}
 		} else {
-			fileId := cmd.Args()[0]
-			storageId := cmd.Args()[1]
+			storageId := cmd.Args()[0]
+			fileId := cmd.Args()[1]
 			ref = &provider.Reference{
 				Spec: &provider.Reference_Id{
 					Id: &provider.ResourceId{
